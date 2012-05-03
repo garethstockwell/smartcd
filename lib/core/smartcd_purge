@@ -1,0 +1,63 @@
+function smartcd_purge() {
+    echo "smartcd: purge"
+    local base=$(_smartcd_base)
+    local inodes_dir=$base/inodes
+    local scripts_dir=$base/scripts
+    local purged_dir=$base/purged
+    local purged_scripts_dir=$base/purged/scripts
+    command rm -rf $purged_dir
+    command mkdir -p $purged_dir
+    command mkdir -p $purged_scripts_dir
+    local tmp_dir=$base/.purge
+    command rm -rf $tmp_dir
+    command mkdir -p $tmp_dir
+    local _old_ifs="$IFS"
+    IFS=$'\n'
+
+    # Purge invalid inodes
+    for entry in $(command find $inodes_dir -iname *.inode); do
+        local prev=$(command cat $entry)
+        local dir=$(dirname $entry)
+        local leaf=$(basename $entry)
+        dir=${dir:${#inodes_dir}}/${leaf//.inode/}
+        local valid=1
+        if [[ -d "$dir" ]]; then
+            local inode=$(command ls -di "$dir" | command awk '{print $1}')
+            if [[ $prev != "*" && $inode != $prev ]]; then
+                echo "smartcd: inode for directory $dir is invalid"
+                valid=
+            fi
+        else
+            echo "smartcd: directory $dir not found"
+            valid=
+        fi
+        [[ -z "$valid" ]] && command rm -f $entry
+    done
+
+    # Build list of script directories
+    local list=$tmp_dir/.list
+    for entry in $(command find $scripts_dir -type f); do
+        echo $(dirname $entry) >> $list
+    done
+
+    # Check which script directories still have valid inode entries
+    for dir in `cat $list | sort -r | uniq`; do
+        dir=${dir:${#scripts_dir}}
+        local entry=$inodes_dir/$dir.inode
+        if [[ ! -e $entry ]]; then
+            echo "smartcd: scripts for $dir are invalid"
+            command mkdir -p $purged_scripts_dir/$dir
+            for script in $(find $scripts_dir/$dir -maxdepth 1 -type f); do
+                command mv $script $purged_scripts_dir/$dir/$(basename $script)
+            done
+        fi
+    done
+
+    # Clean up
+    command rm -rf $tmp_dir
+
+    IFS="$_old_ifs"
+    echo "smartcd: purging complete.  Your previous scripts can be found under"
+    echo "$base/purged in case anything went wrong."
+}
+

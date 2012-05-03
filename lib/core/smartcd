@@ -177,7 +177,7 @@ function smartcd() {
         command="reenter"
     fi
 
-    local usage="Usage: smartcd ( edit | show | filename | helper | template | setup | config | export | import ) [args]"
+    local usage="Usage: smartcd ( edit | show | filename | helper | template | setup | config | export | import | purge ) [args]"
     case $command in
         -h|help|'') echo $usage;;
      cd|pushd|popd) shift; _smartcd $command "$@"; return $?;;
@@ -236,6 +236,7 @@ function smartcd() {
             import) shift; smartcd_import "$@";;
             inform) shift; if [[ -z $suppress_output ]]; then echo "$@"; fi;;
             helper) shift; smartcd_helper "$@";;
+          purge) shift; smartcd_purge "$@";;
                  *) if [[ -n $ZSH_VERSION ]]; then
                         local dir=$argv[-1]
                     else
@@ -823,6 +824,10 @@ function smartcd_upgrade_database() {
 
 function smartcd_helper() {
     _smartcd_load "smartcd_helper" && smartcd_helper "$@"
+}
+
+function smartcd_purge() {
+    _smartcd_load "smartcd_purge" && smartcd_purge "$@"
 }
 
 # Run on load if all the necessary libraries are loaded, otherwise let them do it
