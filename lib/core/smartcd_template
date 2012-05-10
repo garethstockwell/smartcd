@@ -123,7 +123,7 @@ EOF
                             local smartcd_dir="$base/scripts$current_dir"
                             command mkdir -p "$smartcd_dir"
                             local mode= line=
-                            while builtin read -r line; do
+                            while IFS='' builtin read -r line; do
                                 if [[ $line =~ "Enter any bash_enter commands" ]]; then
                                     mode=enter
                                     continue
