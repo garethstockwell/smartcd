@@ -52,19 +52,27 @@ function smartcd_config() {
     local yes="^y"
     function read_yesno() {
         local yesno
-        builtin read yesno < /dev/tty
+        builtin read yesno
         yesno=$(echo $yesno | command tr 'A-Z' 'a-z')
         : ${yesno:=$1}
         echo $yesno
     }
 
+	function echo_tty() {
+		if [[ -n $CYGWIN_HOME ]]; then
+			echo "$@" >&2
+		else
+			echo "$@" >/dev/tty
+		fi
+	}
+
     function ask() {
-        echo >/dev/tty
-        echo "[ $1 ]" >/dev/tty
-        echo -ne "$2" >/dev/tty
+        echo_tty
+        echo_tty "[ $1 ]"
+        echo_tty -ne "$2"
         case $3 in
-            y) echo -n " [Y/n] " >/dev/tty;;
-            n) echo -n " [y/N] " >/dev/tty;;
+            y) echo_tty -n " [Y/n] " ;;
+            n) echo_tty -n " [y/N] " ;;
         esac
         read_yesno $3
     }
@@ -189,7 +197,7 @@ function smartcd_config() {
 
         if [[ -z $setup ]]; then
             echo -n "You did not load your config anywhere, which file would you like to load it from? "
-            builtin read filename < /dev/tty
+            builtin read filename
             if [[ -n "$filename" ]]; then
                 # eval here to expand ~
                 local real_filename=$(readlink -f $(eval echo $filename))
@@ -219,7 +227,7 @@ function smartcd_config() {
 
         if [[ -z $setup ]]; then
             echo -n "You did not configure any files, which file would you like to set up? "
-            builtin read filename < /dev/tty
+            builtin read filename
             if [[ -n "$filename" ]]; then
                 # eval here to expand ~
                 local real_filename=$(readlink -f $(eval echo $filename))
